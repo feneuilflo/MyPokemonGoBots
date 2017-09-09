@@ -1,0 +1,7 @@
+.classpath
+.project
+
+/.settings
+/bin
+
+/src/main/java/com/pokego/bot/LoginData.java
