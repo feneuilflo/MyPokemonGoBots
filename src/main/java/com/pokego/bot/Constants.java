@@ -30,13 +30,13 @@ public interface Constants {
 			"Plaque Du Mail", //
 			"Arbre À Girouettes", //
 			"Rue des Marteaux", //
-			"Mosaïque Mural ", // space at the end
 			"Le Fief De Vigne", //
 			"Arcades Rougé", //
 			"Cholet, Citation D'Heraclite", //
 			"Le Mur Aux Livres", //
 			"Inscription Claude Roy", //
 			"Grand Café", //
+			"Mosaïque Mural ", // space at the end
 			"Manège Travot", //
 			"Bureau de poste, Place Travot"
 			);
@@ -105,6 +105,21 @@ public interface Constants {
 			PokemonId.PIDGEY, // roucool
 			PokemonId.SPINARAK, // mimigal
 			PokemonId.LEDYBA // coxy
+			);
+	
+	
+	public static final List<String> KNOWN_FLIES = Arrays.asList( //
+			"Mllepower", //
+			"MonsterYellowV2", //
+			"Smurfit49", //
+			"Reallena10", //
+			"Twentticent", //
+			"NeltonMy", //
+			"waibery", //
+			"wairberym", //
+			"bisouselinare", //
+			"Xlavilainex", //
+			"XlagentilleX"
 			);
 	
 

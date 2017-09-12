@@ -67,8 +67,8 @@ public class TestGym {
 
 		// Move to start location
 		// api.setLocation(47.05948478361122, -0.8813792467117311, Constants.START_ALTITUDE); // porte du mail
-		// api.setLocation(47.0603329, -0.8805762, Constants.START_ALTITUDE); // caisse d'épargne
-		api.setLocation(47.06081864086622,-0.8815991878509521, Constants.START_ALTITUDE); // notre dame
+		api.setLocation(47.0603329, -0.8805762, Constants.START_ALTITUDE); // caisse d'épargne
+		// api.setLocation(47.06081864086622,-0.8815991878509521, Constants.START_ALTITUDE); // notre dame
 
 		// Wait until map is updated for the current location
 		try {

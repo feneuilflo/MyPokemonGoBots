@@ -18,7 +18,7 @@ public class MoveToLocation implements IUnitOfWork {
 		this.api = api;
 		this.destination = destination;
 	}
-
+	
 	@Override
 	public void run() throws Exception {
 		System.out.println("### Moving to " + destination);

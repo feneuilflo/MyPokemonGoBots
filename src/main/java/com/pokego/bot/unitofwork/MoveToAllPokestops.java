@@ -6,7 +6,6 @@ import java.util.stream.Collectors;
 
 import com.pokego.bot.Constants;
 import com.pokego.bot.utils.Tuple;
-import com.pokego.bot.utils.Utils;
 import com.pokego.bot.utils.WorkQueue;
 import com.pokegoapi.api.PokemonGo;
 import com.pokegoapi.api.map.fort.Pokestop;
@@ -17,13 +16,19 @@ public class MoveToAllPokestops implements IUnitOfWork {
 	private final PokemonGo api;
 	private final WorkQueue queue;
 
+	private List<String> pokestopNames;
 	private List<Pokestop> pokestops;
 
 	public MoveToAllPokestops(PokemonGo api, WorkQueue queue) {
+		this(api, queue, Constants.ORDERED_POKESTOP_NAMES);
+	}
+	
+	public MoveToAllPokestops(PokemonGo api, WorkQueue queue, List<String> pokestopNames) {
 		this.api = api;
 		this.queue = queue;
+		this.pokestopNames = pokestopNames;
 	}
-
+	
 	@Override
 	public void run() throws Exception {
 		if (pokestops == null) {
@@ -36,9 +41,9 @@ public class MoveToAllPokestops implements IUnitOfWork {
 							queue.interrupt();
 							throw new RuntimeException(e);						}
 					}) //
-					.filter(t2 -> Constants.ORDERED_POKESTOP_NAMES.contains(t2.getA())) //
+					.filter(t2 -> pokestopNames.contains(t2.getA())) //
 					.collect(Collectors.toMap(Tuple::getA, Tuple::getB));
-			pokestops = Constants.ORDERED_POKESTOP_NAMES.stream().sequential() //
+			pokestops = pokestopNames.stream().sequential() //
 					.peek(name -> {
 						if (!mapPoketops.containsKey(name)) {
 							System.err.println("Unknown pokestop: " + name);

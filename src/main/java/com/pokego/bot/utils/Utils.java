@@ -17,6 +17,7 @@ import java.util.stream.Stream;
 
 import com.pokego.bot.Constants;
 import com.pokegoapi.api.PokemonGo;
+import com.pokegoapi.api.gym.Gym;
 import com.pokegoapi.api.inventory.EggIncubator;
 import com.pokegoapi.api.inventory.ItemBag;
 import com.pokegoapi.api.inventory.PokeBank;
@@ -43,12 +44,14 @@ import POGOProtos.Inventory.Item.ItemIdOuterClass.ItemId;
 import POGOProtos.Networking.Responses.CatchPokemonResponseOuterClass.CatchPokemonResponse.CatchStatus;
 import POGOProtos.Networking.Responses.NicknamePokemonResponseOuterClass.NicknamePokemonResponse;
 import POGOProtos.Networking.Responses.UpgradePokemonResponseOuterClass.UpgradePokemonResponse;
+import POGOProtos.Networking.Responses.UseItemPotionResponseOuterClass.UseItemPotionResponse;
+import POGOProtos.Networking.Responses.UseItemReviveResponseOuterClass.UseItemReviveResponse;
 import rx.Observable;
 
 public final class Utils {
 
 	private static final double SPEED_KMH = 12.0;
-	
+
 	private static final int NB_MAX_POKEMON_EXP = 300;
 	private static final int NB_MAX_POKEMON = 400;
 	private static final AtomicInteger cntCatchedPokemon = new AtomicInteger();
@@ -111,10 +114,10 @@ public final class Utils {
 	public static void catchPkmInArea(PokemonGo go)
 			throws RequestFailedException, InterruptedException, NoSuchItemException {
 		// stop catching pokemon if too many pkm captured
-		if(cntCatchedPokemon.get() > NB_MAX_POKEMON) {
+		if (cntCatchedPokemon.get() > NB_MAX_POKEMON) {
 			return;
 		}
-		
+
 		displayNearbyPokemons(go);
 
 		Set<CatchablePokemon> catchablePokemon = go.getMap().getMapObjects().getPokemon();
@@ -129,9 +132,9 @@ public final class Utils {
 		for (CatchablePokemon cp : catchablePokemon) {
 			if (cp.hasEncountered())
 				continue;
-			
+
 			// stop catching common pkm when too many pkm captured
-			if(cntCatchedPokemon.get() > NB_MAX_POKEMON_EXP //
+			if (cntCatchedPokemon.get() > NB_MAX_POKEMON_EXP //
 					&& Constants.POKEMON_ID_EXP.contains(cp.getPokemonId())) {
 				continue;
 			}
@@ -214,7 +217,7 @@ public final class Utils {
 
 	public static void onNewPokemon(PokemonGo go, Pokemon pkm) {
 		cntCatchedPokemon.incrementAndGet();
-		
+
 		double iv = pkm.getIvInPercentage();
 		int number = pkm.getPokemonId().getNumber();
 		String name = PokeDictionary.getDisplayName(number, Locale.getDefault());
@@ -296,8 +299,9 @@ public final class Utils {
 		trace("##### Transfert des pokemons #####");
 		PokeBank pokebank = go.getInventories().getPokebank();
 		List<Pokemon> pokemons = pokebank.getPokemons();
-		
-		if(pokemons.isEmpty()) return;
+
+		if (pokemons.isEmpty())
+			return;
 
 		// look for pkm to be transfered
 		List<Pokemon> transferPokemons = Observable.from(pokemons) //
@@ -306,21 +310,21 @@ public final class Utils {
 						.map(list -> list.stream() //
 								.sorted(Comparator.comparing(Pokemon::getCp).reversed()) //
 								// favorites cannot be transfered
-								.filter(pkm -> !pkm.isFavorite()) 
+								.filter(pkm -> !pkm.isFavorite())
 								// don't tranfer pkms in gyms
-								.filter(pkm -> !pkm.isDeployed()) 
+								.filter(pkm -> !pkm.isDeployed())
 								// don't transfer buddy
-								.filter(pkm -> !pkm.isBuddy()) 
+								.filter(pkm -> !pkm.isBuddy())
 								// A tester
-								.filter(pkm -> !pkm.isEgg()) 
+								.filter(pkm -> !pkm.isEgg())
 								// don't transfer pkm with CP > 2000
-								.filter(pkm -> pkm.getCp() < 2000) 
+								.filter(pkm -> pkm.getCp() < 2000)
 								// don't transfer potentially strong pkms
-								.filter(pkm -> pkm.getIvInPercentage() < 90.0) 
+								.filter(pkm -> pkm.getIvInPercentage() < 90.0)
 								// IV less restrictive for tagged strong families
 								.filter(pkm -> pkm.getIvInPercentage() < 70 //
-										|| !Constants.POKEMON_FAMILY_TO_KEEP.contains(pkm.getPokemonFamily())) 
-				)).reduce(Stream::concat) //
+										|| !Constants.POKEMON_FAMILY_TO_KEEP.contains(pkm.getPokemonFamily()))))
+				.reduce(Stream::concat) //
 				.map(stream -> stream.collect(Collectors.toList())) //
 				.toBlocking() //
 				.first();
@@ -501,8 +505,8 @@ public final class Utils {
 			}
 		}
 
-		/** 
-		 * gestion specifique famille evoli (seule famille pour laquelle on monte plus 
+		/**
+		 * gestion specifique famille evoli (seule famille pour laquelle on monte plus
 		 * d'un pokemon)
 		 **/
 		// find best possessed evolutions
@@ -520,14 +524,14 @@ public final class Utils {
 				.mapToDouble(Pokemon::getIvInPercentage) //
 				.min() //
 				.orElse(0);
-		
+
 		// find eevees that can give better evolutions
 		List<Pokemon> eevees = pokemons.stream() //
 				.filter(pkm -> pkm.getPokemonId() == PokemonId.EEVEE) //
 				.filter(pkm -> pkm.getIvInPercentage() > minIV) //
 				.sorted(Comparator.comparing(Pokemon::getIvInPercentage).reversed()) //
 				.collect(Collectors.toList());
-		
+
 		// manage eevee evolution
 		Map<PokemonId, Pokemon> mapBestEeveeEvolutions2 = new HashMap<>(mapBestEeveeEvolutions);
 		for (Pokemon eevee : eevees) {
@@ -540,50 +544,51 @@ public final class Utils {
 				idToRemove.forEach(mapBestEeveeEvolutions2::remove);
 				break;
 			}
-			
+
 			// evolve eevee if it can give a better evolution
-			
+
 			// force evolution if missing
-			if(!mapBestEeveeEvolutions2.containsKey(PokemonId.ESPEON)) {
+			if (!mapBestEeveeEvolutions2.containsKey(PokemonId.ESPEON)) {
 				// mentali
 				eevee.renamePokemon("Sakura");
-			} else if(!mapBestEeveeEvolutions2.containsKey(PokemonId.UMBREON)) {
+			} else if (!mapBestEeveeEvolutions2.containsKey(PokemonId.UMBREON)) {
 				// noctali
 				eevee.renamePokemon("Tamao");
-			} else if(!mapBestEeveeEvolutions2.containsKey(PokemonId.VAPOREON)) {
+			} else if (!mapBestEeveeEvolutions2.containsKey(PokemonId.VAPOREON)) {
 				// noctali
 				eevee.renamePokemon("Rainer");
-			} else if(!mapBestEeveeEvolutions2.containsKey(PokemonId.JOLTEON)) {
+			} else if (!mapBestEeveeEvolutions2.containsKey(PokemonId.JOLTEON)) {
 				// noctali
 				eevee.renamePokemon("Sparky");
-			} else if(!mapBestEeveeEvolutions2.containsKey(PokemonId.FLAREON)) {
+			} else if (!mapBestEeveeEvolutions2.containsKey(PokemonId.FLAREON)) {
 				// noctali
 				eevee.renamePokemon("Pyro");
 			}
-			
+
 			if (mapBestEeveeEvolutions2.size() < 5 //
 					|| mapBestEeveeEvolutions2.values().stream() //
-					.anyMatch(evol -> eevee.getIvInPercentage() > evol.getIvInPercentage())) {
+							.anyMatch(evol -> eevee.getIvInPercentage() > evol.getIvInPercentage())) {
 				System.out.println("Evolving "
 						+ PokeDictionary.getDisplayName(eevee.getPokemonId().getNumber(), Locale.getDefault()));
 				EvolutionResult r = eevee.evolve();
 				System.out.println("Evolution result : " + r.getResult());
 				if (r.isSuccessful()) {
 					Utils.onNewPokemon(api, r.getEvolvedPokemon());
-					if(!mapBestEeveeEvolutions2.containsKey(r.getEvolvedPokemon().getPokemonId()) //
-							|| mapBestEeveeEvolutions2.get(r.getEvolvedPokemon().getPokemonId()).getIvInPercentage() < r.getEvolvedPokemon().getIvInPercentage()) {
+					if (!mapBestEeveeEvolutions2.containsKey(r.getEvolvedPokemon().getPokemonId()) //
+							|| mapBestEeveeEvolutions2.get(r.getEvolvedPokemon().getPokemonId()).getIvInPercentage() < r
+									.getEvolvedPokemon().getIvInPercentage()) {
 						// keep if new evolution or if better than previous
 						mapBestEeveeEvolutions2.put(r.getEvolvedPokemon().getPokemonId(), r.getEvolvedPokemon());
 					}
 				}
 			}
 		}
-		
+
 		// manage evolution powerup
 		List<Pokemon> evolToPowerUp = mapBestEeveeEvolutions2.values().stream() //
 				.sorted(Comparator.comparing(Pokemon::getIvInPercentage).reversed()) //
 				.collect(Collectors.toList());
-		for(Pokemon evol : evolToPowerUp) {
+		for (Pokemon evol : evolToPowerUp) {
 			while (evol.canPowerUp() && evol.getStardustCostsForPowerup() <= 4000) {
 				System.out.println("Upgrading "
 						+ PokeDictionary.getDisplayName(evol.getPokemonId().getNumber(), Locale.getDefault()));
@@ -598,10 +603,77 @@ public final class Utils {
 		}
 
 	}
-	
-	
+
+	public static boolean healPokemon(PokemonGo api, Pokemon pkm) throws RequestFailedException {
+
+		ItemBag bag = api.getInventories().getItemBag();
+
+		// revive if needed
+		if (pkm.isFainted()) {
+			if (pkm.revive() == UseItemReviveResponse.Result.ERROR_CANNOT_USE) {
+				System.out.println("We have no revives! Cannot revive pokemon.");
+				return false;
+			}
+		}
+
+		// heal
+		while (pkm.isInjured()) {
+			int missingStamina = pkm.getMaxStamina() - pkm.getStamina();
+
+			UseItemPotionResponse.Result r = null;
+			if (missingStamina < 20 //
+					&& bag.getItem(ItemId.ITEM_POTION).getCount() > 0) {
+				r = pkm.usePotion(ItemId.ITEM_POTION);
+			} else if (missingStamina < 50 //
+					&& bag.getItem(ItemId.ITEM_SUPER_POTION).getCount() > 0) {
+				r = pkm.usePotion(ItemId.ITEM_SUPER_POTION);
+			} else if (missingStamina < 200 //
+					&& bag.getItem(ItemId.ITEM_HYPER_POTION).getCount() > 0) {
+				r = pkm.usePotion(ItemId.ITEM_HYPER_POTION);
+			} else if (api.getInventories().getItemBag().getItem(ItemId.ITEM_MAX_POTION).getCount() > 0) {
+				r = pkm.usePotion(ItemId.ITEM_POTION);
+			} else {
+				// cannot heal in one try -> use any potion
+				if (pkm.heal() == UseItemPotionResponse.Result.ERROR_CANNOT_USE) {
+					System.out.println("We have no potions! Cannot heal pokemon.");
+					return false;
+				}
+			}
+			if (r != UseItemPotionResponse.Result.SUCCESS) {
+				return false;
+			}
+		}
+		
+		return true;
+	}
+
 	public static void trace(String str) {
 		System.out.println(String.format("%d - %s", System.currentTimeMillis(), str));
+	}
+	
+	/**
+	 * Trouve l'arène la plus proche avec un fly
+	 * 
+	 * @param api
+	 * @return
+	 */
+	public static Optional<Gym> checkGymsInArea(PokemonGo api) {
+		displayNearbyGyms(api);
+		
+		return api.getMap().getMapObjects().getGyms().stream() //
+				.filter(gym -> !gym.getFortData().hasRaidInfo()) // cannot attack gym with running raid
+				// look for gym with fly
+				.filter(gym -> {
+					try {
+						return gym.getDefendingPokemon().stream() //
+								.anyMatch(pkm -> Constants.KNOWN_FLIES.contains(pkm.getPokemon().getOwnerName()));
+					} catch (RequestFailedException e1) {
+						e1.printStackTrace();
+						return false;
+					}
+				}) //
+				.sorted(Comparator.comparing(Gym::getDistance)) // look for closest gym
+				.findFirst();
 	}
 
 }
