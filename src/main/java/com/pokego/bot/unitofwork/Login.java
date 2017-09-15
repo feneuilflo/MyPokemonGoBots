@@ -70,6 +70,7 @@ public class Login implements IUnitOfWork {
 				+ String.format("(%d/%d)", //
 						api.getPlayerProfile().getStats().getExperience() - api.getPlayerProfile().getStats().getPrevLevelXp(), //
 						api.getPlayerProfile().getStats().getNextLevelXp() - api.getPlayerProfile().getStats().getPrevLevelXp()));
+		System.out.println("team: " + api.getPlayerProfile().getPlayerData().getTeam());
 		System.out.println("Distance parcourue: " + api.getPlayerProfile().getStats().getKmWalked() + "km");
 		System.out.println("Nb pokémons attrapés: " + api.getPlayerProfile().getStats().getPokemonsCaptured());
 		System.out.println("Oeufs éclos: " + api.getPlayerProfile().getStats().getEggsHatched());

@@ -2,16 +2,19 @@ package com.pokego.bot;
 
 import java.util.concurrent.TimeUnit;
 
+import com.pokego.bot.listener.TutorialListenerImpl;
 import com.pokego.bot.unitofwork.Login;
 import com.pokego.bot.unitofwork.Patrol;
 import com.pokego.bot.utils.WorkQueue;
 import com.pokegoapi.api.PokemonGo;
 import com.pokegoapi.api.map.Point;
+import com.pokegoapi.api.pokemon.StarterPokemon;
 import com.pokegoapi.auth.CredentialProvider;
 import com.pokegoapi.auth.PtcCredentialProvider;
 import com.pokegoapi.exceptions.request.InvalidCredentialsException;
 import com.pokegoapi.exceptions.request.LoginFailedException;
 
+import POGOProtos.Enums.TeamColorOuterClass.TeamColor;
 import okhttp3.OkHttpClient;
 import rx.Observable;
 
@@ -41,6 +44,7 @@ public class PatrolCholetCenterMain {
 			}
 			
 			//api.addListener(new RequestListener()); 
+			api.addListener(new TutorialListenerImpl("BotPTC0002", StarterPokemon.BULBASAUR, TeamColor.YELLOW));
 			
 			queue.addWork(new Login(api, credentialProvider, queue, new Point(47.0603329, -0.8805762)));
 			

@@ -44,6 +44,7 @@ import POGOProtos.Inventory.Item.ItemIdOuterClass.ItemId;
 import POGOProtos.Networking.Responses.CatchPokemonResponseOuterClass.CatchPokemonResponse.CatchStatus;
 import POGOProtos.Networking.Responses.NicknamePokemonResponseOuterClass.NicknamePokemonResponse;
 import POGOProtos.Networking.Responses.UpgradePokemonResponseOuterClass.UpgradePokemonResponse;
+import POGOProtos.Networking.Responses.UseItemEncounterResponseOuterClass.UseItemEncounterResponse;
 import POGOProtos.Networking.Responses.UseItemPotionResponseOuterClass.UseItemPotionResponse;
 import POGOProtos.Networking.Responses.UseItemReviveResponseOuterClass.UseItemReviveResponse;
 import rx.Observable;
@@ -165,21 +166,30 @@ public final class Utils {
 						if (encounter.getActiveItem() == null && pinapberryCount > 0 && probability > 0.3 //
 								&& !Constants.POKEMON_ID_EXP.contains(cp.getPokemonId())) {
 							System.out.println("using a pinap berry...");
-							encounter.useItem(ItemId.ITEM_PINAP_BERRY);
+							UseItemEncounterResponse.Status s = encounter.useItem(ItemId.ITEM_PINAP_BERRY);
+							if(s != UseItemEncounterResponse.Status.SUCCESS) {
+								System.out.println("failed to use item: " + s);
+							}
 						}
 
 						// If no item is active, use a razzberry
 						int razzberryCount = bag.getItem(ItemId.ITEM_RAZZ_BERRY).getCount();
 						if (encounter.getActiveItem() == null && razzberryCount > 0 && probability < 0.5) {
 							System.out.println("using a razz berry...");
-							encounter.useItem(ItemId.ITEM_RAZZ_BERRY);
+							UseItemEncounterResponse.Status s = encounter.useItem(ItemId.ITEM_RAZZ_BERRY);
+							if(s != UseItemEncounterResponse.Status.SUCCESS) {
+								System.out.println("failed to use item: " + s);
+							}
 						}
 
 						// use nana bery if no item active
 						int nanabberryCount = bag.getItem(ItemId.ITEM_NANAB_BERRY).getCount();
 						if (encounter.getActiveItem() == null && nanabberryCount > 0) {
 							System.out.println("using a nanab berry...");
-							encounter.useItem(ItemId.ITEM_NANAB_BERRY);
+							UseItemEncounterResponse.Status s = encounter.useItem(ItemId.ITEM_NANAB_BERRY);
+							if(s != UseItemEncounterResponse.Status.SUCCESS) {
+								System.out.println("failed to use item: " + s);
+							}
 						}
 
 						// Throw pokeball with random properties
@@ -187,13 +197,15 @@ public final class Utils {
 
 						if (encounter.getStatus() == CatchStatus.CATCH_SUCCESS) {
 							// Print pokemon stats
+							// go.getInventories().updateInventories(false); // register new pokemon
 							Pokemon pokemon = pokebank.getPokemonById(encounter.getCapturedPokemon());
 							if (pokemon != null) {
 								onNewPokemon(go, pokemon);
+							} else {
+								System.out.println("Error: pkm catched but not found in pokebank");
 							}
 						} else {
-							System.out.println(encounter.getStatus());
-							System.out.println("failed");
+							System.out.println("failed: " + encounter.getStatus());
 						}
 					}
 				} else {

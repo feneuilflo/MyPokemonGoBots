@@ -13,7 +13,6 @@ import com.pokegoapi.api.gym.Gym;
 import com.pokegoapi.api.pokemon.Pokemon;
 import com.pokegoapi.exceptions.request.RequestFailedException;
 
-import POGOProtos.Data.Battle.BattleActionTypeOuterClass.BattleActionType;
 import POGOProtos.Data.Battle.BattleParticipantOuterClass.BattleParticipant;
 import POGOProtos.Enums.PokemonIdOuterClass.PokemonId;
 import POGOProtos.Enums.PokemonMoveOuterClass.PokemonMove;
@@ -28,8 +27,7 @@ public class BattleUtils {
 	 * @return true if no error and all flies have been defeated, false otherwise
 	 * @throws RequestFailedException
 	 */
-	
-	
+
 	public static boolean battleNearbyGym(PokemonGo api) throws RequestFailedException {
 		System.out.println("### looking for gym to fight ###");
 
@@ -38,12 +36,12 @@ public class BattleUtils {
 				.filter(Gym::inRange) //
 				.sorted(Comparator.comparing(Gym::getDistance)) //
 				.findFirst();
-		
-		if(!opt.isPresent()) {
+
+		if (!opt.isPresent()) {
 			System.out.println("No gym in range");
 			return false;
 		}
-		
+
 		Gym gym = opt.get();
 		System.out.println("Found gym " + gym.getName());
 
@@ -72,16 +70,17 @@ public class BattleUtils {
 
 			// select attackers
 			System.out.println("### selecting attackers: ");
+			api.getInventories().updateInventories(true); // force to update pkm HP
 			List<Pokemon> pokemons = api.getInventories().getPokebank().getPokemons();
 			List<Pokemon> attackers = pokemons.stream() //
 					.sorted(Comparator.comparing(Pokemon::getCp).reversed()) //
 					.limit(6) //
 					.peek(pkm -> System.out.println(String.format("%s (%d)", pkm.getPokemonId(), pkm.getCp()))) //
 					.collect(Collectors.toList());
-			
+
 			// heal attackers
-			for(Pokemon pkm : attackers) {
-				if(pkm.isFainted() || pkm.isInjured()) {
+			for (Pokemon pkm : attackers) {
+				if (pkm.isFainted() || pkm.isInjured()) {
 					System.out.println("Healing " + pkm.getPokemonId());
 					boolean isHealed = Utils.healPokemon(api, pkm);
 					if (!isHealed) {
@@ -90,7 +89,7 @@ public class BattleUtils {
 					}
 				}
 			}
-			
+
 			if (attackers.isEmpty()) {
 				System.out.println("No available attackers -> quit");
 				return false;
@@ -111,16 +110,23 @@ public class BattleUtils {
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-				
+
 				// check one defender defeated
-				if(!handler.isOneDefenderDefeated()) {
+				if (!handler.isOneDefenderDefeated()) {
 					System.out.println("Crushing defeat -> quit");
 					return false;
+				} else {
+					try {
+						Thread.sleep(10_000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+						return false;
+					}
 				}
 
 			}
 		}
-		
+
 		// sucess !
 		return true;
 
@@ -146,7 +152,7 @@ public class BattleUtils {
 
 	private static class FightHandler implements Battle.BattleHandler {
 		private Pokemon[] team;
-		
+
 		private boolean oneDefenderDefeated = false;
 
 		FightHandler(Pokemon[] team) {
@@ -189,11 +195,12 @@ public class BattleUtils {
 
 		@Override
 		public void onActionStart(PokemonGo api, Battle battle, Battle.ServerAction action) {
-			// Dodge all special attacks // FIXME should during damage window
-			if (action.getType() == BattleActionType.ACTION_SPECIAL_ATTACK) {
-				System.out.println("Dodging special attack!");
-				battle.dodge();
-			}
+			// Dodge all special attacks // FIXME should during damage window, and only when
+			// defender attack
+			// if (action.getType() == BattleActionType.ACTION_SPECIAL_ATTACK) {
+			// System.out.println("Dodging special attack!");
+			// battle.dodge();
+			// }
 			System.out.println(toIndexName(action) + " performed " + action.getType());
 		}
 
@@ -211,7 +218,8 @@ public class BattleUtils {
 
 		@Override
 		public void onPlayerJoin(PokemonGo api, Battle battle, BattleParticipant joined, Battle.ServerAction action) {
-			System.out.println(joined.getTrainerPublicProfile().getName() + " joined this battle!");
+			System.out.println(joined.getTrainerPublicProfile().getName() + " joined this battle with "
+					+ joined.getActivePokemon().getPokemonData().getPokemonId());
 		}
 
 		@Override
@@ -296,8 +304,7 @@ public class BattleUtils {
 			}
 			return name;
 		}
-		
-		
+
 		public boolean isOneDefenderDefeated() {
 			return oneDefenderDefeated;
 		}

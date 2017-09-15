@@ -3,12 +3,9 @@ package com.pokego.bot;
 import java.util.Comparator;
 import java.util.Locale;
 
+import com.pokego.bot.listener.TutorialListenerImpl;
 import com.pokego.bot.utils.Utils;
 import com.pokegoapi.api.PokemonGo;
-import com.pokegoapi.api.listener.TutorialListener;
-import com.pokegoapi.api.player.Avatar;
-import com.pokegoapi.api.player.PlayerAvatar;
-import com.pokegoapi.api.player.PlayerGender;
 import com.pokegoapi.api.pokemon.Pokemon;
 import com.pokegoapi.api.pokemon.StarterPokemon;
 import com.pokegoapi.auth.PtcCredentialProvider;
@@ -19,6 +16,7 @@ import com.pokegoapi.util.hash.HashProvider;
 import com.pokegoapi.util.hash.pokehash.PokeHashKey;
 import com.pokegoapi.util.hash.pokehash.PokeHashProvider;
 
+import POGOProtos.Enums.TeamColorOuterClass.TeamColor;
 import okhttp3.OkHttpClient;
 
 /**
@@ -42,42 +40,9 @@ public class CreatePTCAccountMain {
 			// Add listener to listen for all tutorial related events, must be registered
 			// before login is called,
 			// otherwise it will not be used
-			api.addListener(new TutorialListener() {
-				@Override
-				public String claimName(PokemonGo api, String lastFailure) {
-					// Last attempt to set a codename failed, set a random one by returning null
-					if (lastFailure != null) {
-						System.out.println("Codename \"" + lastFailure + "\" is already taken. Using random name.");
-						return null;
-					}
-					System.out.println("Selecting codename");
-					return ""; // TODO a renseigner
-				}
-
-				@Override
-				public StarterPokemon selectStarter(PokemonGo api) {
-					// Catch Charmander as your starter pokemon
-					System.out.println("Selecting starter pokemon");
-					return StarterPokemon.SQUIRTLE;
-				}
-
-				@Override
-				public PlayerAvatar selectAvatar(PokemonGo api) {
-					System.out.println("Selecting player avatar");
-					return new PlayerAvatar( //
-							PlayerGender.FEMALE, //
-							Avatar.Skin.YELLOW.id(), //
-							Avatar.Hair.BLACK.id(), //
-							Avatar.FemaleShirt.BLUE.id(), //
-							Avatar.FemalePants.BLACK_PURPLE_STRIPE.id(),
-							Avatar.FemaleHat.BLACK_YELLOW_POKEBALL.id(), //
-							Avatar.FemaleShoes.BLACK_YELLOW_STRIPE.id(), //
-							Avatar.Eye.GREEN.id(), //
-							Avatar.FemaleBackpack.GRAY_BLACK_YELLOW_POKEBALL.id());
-				}
-			});
+			api.addListener(new TutorialListenerImpl("BotPTC0002", StarterPokemon.BULBASAUR, TeamColor.YELLOW));
 			HashProvider hasher = new PokeHashProvider(PokeHashKey.from(LoginData.HASH_KEY), true);
-			api.login(new PtcCredentialProvider(http, "", ""), hasher); // TODO a renseigner
+			api.login(new PtcCredentialProvider(http, "BotPTC0002", "@BotPTC0002"), hasher); // TODO a renseigner
 
 			// Affichage divers
 			System.out.println(api.getPlayerProfile().getPlayerData().getUsername());
