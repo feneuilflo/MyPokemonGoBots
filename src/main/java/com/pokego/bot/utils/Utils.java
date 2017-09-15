@@ -1,5 +1,6 @@
 package com.pokego.bot.utils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -129,7 +130,7 @@ public final class Utils {
 		trace("##### Capture de pokemons à proximité #####");
 		ItemBag bag = go.getInventories().getItemBag();
 		Random random = new Random();
-		PokeBank pokebank = go.getInventories().getPokebank();
+		List<Long> catchedPokemonIds = new ArrayList<>();
 		for (CatchablePokemon cp : catchablePokemon) {
 			if (cp.hasEncountered())
 				continue;
@@ -196,14 +197,8 @@ public final class Utils {
 						encounter.throwPokeball(PokeballSelector.SMART, ThrowProperties.random());
 
 						if (encounter.getStatus() == CatchStatus.CATCH_SUCCESS) {
-							// Print pokemon stats
-							// go.getInventories().updateInventories(false); // register new pokemon
-							Pokemon pokemon = pokebank.getPokemonById(encounter.getCapturedPokemon());
-							if (pokemon != null) {
-								onNewPokemon(go, pokemon);
-							} else {
-								System.out.println("Error: pkm catched but not found in pokebank");
-							}
+							System.out.println("Catched !");
+							catchedPokemonIds.add(encounter.getCapturedPokemon());
 						} else {
 							System.out.println("failed: " + encounter.getStatus());
 						}
@@ -217,6 +212,19 @@ public final class Utils {
 				Thread.sleep(3000 + random.nextInt(1000));
 			} else {
 				System.out.println("Failed to encounter pokemon: " + encounter.getEncounterResult());
+			}
+		}
+		
+		// display catched pokemons
+		// Print pokemon stats
+		if (!catchedPokemonIds.isEmpty()) {
+			go.getInventories().updateInventories(true);
+			PokeBank pokebank = go.getInventories().getPokebank();
+			for (long id : catchedPokemonIds) {
+				Pokemon pokemon = pokebank.getPokemonById(id);
+				if (pokemon != null) {
+					onNewPokemon(go, pokemon);
+				}
 			}
 		}
 
