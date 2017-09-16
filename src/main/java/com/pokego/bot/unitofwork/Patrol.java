@@ -22,6 +22,7 @@ public class Patrol implements IUnitOfWork {
 		this.api = api;
 		this.queue = queue;
 		this.farmingUOW = new MoveToAllPokestops(api, queue, pokestopNames);
+		
 	}
 
 	@Override
@@ -30,6 +31,8 @@ public class Patrol implements IUnitOfWork {
 		
 		if(optGym.isPresent()) {
 			// if a fly is found
+			// .. save location
+			Point pt = api.getPoint();
 			
 			// .. move to gym
 			if(!optGym.get().inRange()) {
@@ -42,6 +45,9 @@ public class Patrol implements IUnitOfWork {
 					// if we fail to win, do a farming session
 					queue.addImmediateWork(farmingUOW);
 				}
+				
+				// go back to previous location
+				queue.addWork(new MoveToLocation(api, pt));
 			});
 		} else {
 			// if no fly is found, do a farming session

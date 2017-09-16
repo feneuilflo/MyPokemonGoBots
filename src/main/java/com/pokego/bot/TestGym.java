@@ -221,9 +221,8 @@ public class TestGym {
 		}
 
 		@Override
-		public void onVictory(PokemonGo api, Battle battle, int deltaPoints, long newPoints) {
+		public void onVictory(PokemonGo api, Battle battle) {
 			System.out.println("Gym ended with result: Victory!");
-			System.out.println("Delta points: " + deltaPoints + ", New points: " + newPoints);
 		}
 
 		@Override

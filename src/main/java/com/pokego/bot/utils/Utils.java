@@ -168,7 +168,7 @@ public final class Utils {
 								&& !Constants.POKEMON_ID_EXP.contains(cp.getPokemonId())) {
 							System.out.println("using a pinap berry...");
 							UseItemEncounterResponse.Status s = encounter.useItem(ItemId.ITEM_PINAP_BERRY);
-							if(s != UseItemEncounterResponse.Status.SUCCESS) {
+							if (s != UseItemEncounterResponse.Status.SUCCESS) {
 								System.out.println("failed to use item: " + s);
 							}
 						}
@@ -178,7 +178,7 @@ public final class Utils {
 						if (encounter.getActiveItem() == null && razzberryCount > 0 && probability < 0.5) {
 							System.out.println("using a razz berry...");
 							UseItemEncounterResponse.Status s = encounter.useItem(ItemId.ITEM_RAZZ_BERRY);
-							if(s != UseItemEncounterResponse.Status.SUCCESS) {
+							if (s != UseItemEncounterResponse.Status.SUCCESS) {
 								System.out.println("failed to use item: " + s);
 							}
 						}
@@ -188,7 +188,7 @@ public final class Utils {
 						if (encounter.getActiveItem() == null && nanabberryCount > 0) {
 							System.out.println("using a nanab berry...");
 							UseItemEncounterResponse.Status s = encounter.useItem(ItemId.ITEM_NANAB_BERRY);
-							if(s != UseItemEncounterResponse.Status.SUCCESS) {
+							if (s != UseItemEncounterResponse.Status.SUCCESS) {
 								System.out.println("failed to use item: " + s);
 							}
 						}
@@ -214,7 +214,7 @@ public final class Utils {
 				System.out.println("Failed to encounter pokemon: " + encounter.getEncounterResult());
 			}
 		}
-		
+
 		// display catched pokemons
 		// Print pokemon stats
 		if (!catchedPokemonIds.isEmpty()) {
@@ -663,14 +663,14 @@ public final class Utils {
 				return false;
 			}
 		}
-		
+
 		return true;
 	}
 
 	public static void trace(String str) {
 		System.out.println(String.format("%d - %s", System.currentTimeMillis(), str));
 	}
-	
+
 	/**
 	 * Trouve l'arène la plus proche avec un fly
 	 * 
@@ -679,7 +679,7 @@ public final class Utils {
 	 */
 	public static Optional<Gym> checkGymsInArea(PokemonGo api) {
 		displayNearbyGyms(api);
-		
+
 		return api.getMap().getMapObjects().getGyms().stream() //
 				.filter(gym -> !gym.getFortData().hasRaidInfo()) // cannot attack gym with running raid
 				// look for gym with fly
@@ -691,8 +691,19 @@ public final class Utils {
 						e1.printStackTrace();
 						return false;
 					}
-				}) //
-				.sorted(Comparator.comparing(Gym::getDistance)) // look for closest gym
+				})
+				// sort by best pokmemon
+				.sorted(Comparator.<Gym, Integer>comparing(gym -> {
+					try {
+						return gym.getDefendingPokemon().stream() //
+								.mapToInt(pkm -> pkm.getCpNow()).max() //
+								.getAsInt();
+					} catch (RequestFailedException e) {
+						e.printStackTrace();
+						return Integer.MAX_VALUE;
+					}
+				}))
+				// look for weakest gym
 				.findFirst();
 	}
 

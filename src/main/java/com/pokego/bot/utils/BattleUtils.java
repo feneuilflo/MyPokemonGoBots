@@ -105,15 +105,27 @@ public class BattleUtils {
 					while (battle.isActive()) {
 						handleAttack(api, battle);
 					}
-				} catch (RequestFailedException e) {
+				} catch (RequestFailedException | InterruptedException e) {
 					e.printStackTrace();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+					return false;
 				}
 
 				// check one defender defeated
 				if (!handler.isOneDefenderDefeated()) {
 					System.out.println("Crushing defeat -> quit");
+					
+					// heal attackers
+					api.getInventories().updateInventories(true); // force to update pkm HP
+					for (Pokemon pkm : attackers) {
+						if (pkm.isFainted() || pkm.isInjured()) {
+							System.out.println("Healing " + pkm.getPokemonId());
+							boolean isHealed = Utils.healPokemon(api, pkm);
+							if (!isHealed) {
+								System.out.println("Cannot heal attackers");
+								break;
+							}
+						}
+					}
 					return false;
 				} else {
 					try {
@@ -133,6 +145,13 @@ public class BattleUtils {
 	}
 
 	private static void handleAttack(PokemonGo api, Battle battle) throws InterruptedException {
+		if(battle.getActiveAttacker().getHealth() == 0 //
+				|| battle.getActiveDefender().getHealth() == 0) {
+			// skip this one
+			Thread.sleep(100);
+			return;
+		}
+		
 		int duration;
 		PokemonMove specialMove = battle.getActiveAttacker().getPokemon().getMove2();
 		MoveSettings moveSettings = api.getItemTemplates().getMoveSettings(specialMove);
@@ -177,9 +196,8 @@ public class BattleUtils {
 		}
 
 		@Override
-		public void onVictory(PokemonGo api, Battle battle, int deltaPoints, long newPoints) {
+		public void onVictory(PokemonGo api, Battle battle) {
 			System.out.println("Gym ended with result: Victory!");
-			System.out.println("Delta points: " + deltaPoints + ", New points: " + newPoints);
 			oneDefenderDefeated = true;
 		}
 
