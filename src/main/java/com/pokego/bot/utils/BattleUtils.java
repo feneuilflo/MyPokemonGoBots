@@ -51,6 +51,17 @@ public class BattleUtils {
 			System.out.println("Cannot attack the closest gym --> return");
 			return false;
 		}
+		
+		// select attackers
+		System.out.println("### selecting attackers: ");
+		List<Pokemon> pokemons = api.getInventories().getPokebank().getPokemons();
+		List<Pokemon> attackers = pokemons.stream() //
+				.sorted(Comparator.comparing(Pokemon::getCp).reversed()) //
+				.filter(pkm -> !pkm.isDeployed()) //
+				.limit(6) //
+				.peek(pkm -> System.out.println(String.format("%s (%d)", pkm.getPokemonId(), pkm.getCp()))) //
+				.collect(Collectors.toList());
+
 
 		// attack as long as there is a fly in the gym
 		while (gym.getDefendingPokemon().stream() //
@@ -68,26 +79,10 @@ public class BattleUtils {
 				e.printStackTrace();
 			}
 
-			// select attackers
-			System.out.println("### selecting attackers: ");
-			api.getInventories().updateInventories(true); // force to update pkm HP
-			List<Pokemon> pokemons = api.getInventories().getPokebank().getPokemons();
-			List<Pokemon> attackers = pokemons.stream() //
-					.sorted(Comparator.comparing(Pokemon::getCp).reversed()) //
-					.limit(6) //
-					.peek(pkm -> System.out.println(String.format("%s (%d)", pkm.getPokemonId(), pkm.getCp()))) //
-					.collect(Collectors.toList());
-
 			// heal attackers
-			for (Pokemon pkm : attackers) {
-				if (pkm.isFainted() || pkm.isInjured()) {
-					System.out.println("Healing " + pkm.getPokemonId());
-					boolean isHealed = Utils.healPokemon(api, pkm);
-					if (!isHealed) {
-						System.out.println("Cannot heal attackers -> quit");
-						return false;
-					}
-				}
+			if(!healAll(api, attackers)) {
+				System.out.println("Cannot heal all attackers -> quit");
+				return false;
 			}
 
 			if (attackers.isEmpty()) {
@@ -115,17 +110,7 @@ public class BattleUtils {
 					System.out.println("Crushing defeat -> quit");
 					
 					// heal attackers
-					api.getInventories().updateInventories(true); // force to update pkm HP
-					for (Pokemon pkm : attackers) {
-						if (pkm.isFainted() || pkm.isInjured()) {
-							System.out.println("Healing " + pkm.getPokemonId());
-							boolean isHealed = Utils.healPokemon(api, pkm);
-							if (!isHealed) {
-								System.out.println("Cannot heal attackers");
-								break;
-							}
-						}
-					}
+					healAll(api, attackers);
 					return false;
 				} else {
 					try {
@@ -138,10 +123,30 @@ public class BattleUtils {
 
 			}
 		}
+		
+		// heal attackers
+		healAll(api, attackers);
 
 		// sucess !
 		return true;
 
+	}
+	
+	private static final boolean healAll(PokemonGo api, List<Pokemon> attackers) throws RequestFailedException {
+		// heal attackers
+		api.getInventories().updateInventories(true); // force to update pkm HP
+		for (Pokemon pkm : attackers) {
+			if (pkm.isFainted() || pkm.isInjured()) {
+				System.out.println("Healing " + pkm.getPokemonId());
+				boolean isHealed = Utils.healPokemon(api, pkm);
+				if (!isHealed) {
+					System.out.println("Cannot heal " + pkm.getPokemonId());
+					return false;
+				}
+			}
+		}
+		
+		return true;
 	}
 
 	private static void handleAttack(PokemonGo api, Battle battle) throws InterruptedException {
