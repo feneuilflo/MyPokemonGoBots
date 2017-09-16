@@ -259,15 +259,15 @@ public final class Utils {
 			System.out.println("failed to rename pokemon: " + e1.getMessage());
 		}
 		// Set pokemon with IV above 90% as favorite
-		if (iv > 90) {
-			try {
-				System.out.println("IV > 90%  ---> favorite...");
-				pkm.setFavoritePokemon(true);
-				System.out.println("IV > 90%  ---> favorite...OK");
-			} catch (RequestFailedException e) {
-				System.out.println("failed to set pokemon to favorite: " + e.getMessage());
-			}
-		}
+//		if (iv > 90) {
+//			try {
+//				System.out.println("IV > 90%  ---> favorite...");
+//				pkm.setFavoritePokemon(true);
+//				System.out.println("IV > 90%  ---> favorite...OK");
+//			} catch (RequestFailedException e) {
+//				System.out.println("failed to set pokemon to favorite: " + e.getMessage());
+//			}
+//		}
 
 		// evolve pkm if tagged as xp provider
 		if (pkm.canEvolve() //
@@ -323,31 +323,38 @@ public final class Utils {
 		if (pokemons.isEmpty())
 			return;
 
-		// look for pkm to be transfered
-		List<Pokemon> transferPokemons = Observable.from(pokemons) //
+		// look for pokemon to be kept
+		List<Pokemon> keptPokemons = Observable.from(pokemons) //
 				.groupBy(Pokemon::getPokemonId) //
 				.flatMap(obs -> obs.toList() //
 						.map(list -> list.stream() //
 								.sorted(Comparator.comparing(Pokemon::getCp).reversed()) //
-								// favorites cannot be transfered
-								.filter(pkm -> !pkm.isFavorite())
-								// don't tranfer pkms in gyms
-								.filter(pkm -> !pkm.isDeployed())
-								// don't transfer buddy
-								.filter(pkm -> !pkm.isBuddy())
-								// A tester
-								.filter(pkm -> !pkm.isEgg())
-								// don't transfer pkm with CP > 2000
-								.filter(pkm -> pkm.getCp() < 2000)
-								// don't transfer potentially strong pkms
-								.filter(pkm -> pkm.getIvInPercentage() < 90.0)
-								// IV less restrictive for tagged strong families
-								.filter(pkm -> pkm.getIvInPercentage() < 70 //
-										|| !Constants.POKEMON_FAMILY_TO_KEEP.contains(pkm.getPokemonFamily()))))
+								// keep at most one of each pokemon, except for eevees
+								.limit(obs.getKey() == PokemonId.EEVEE ? 6 : 1) //
+								// keep only strong pokemons
+								.filter(pkm -> pkm.getIvInPercentage() > 90.0 //
+										|| (Constants.POKEMON_FAMILY_TO_KEEP.contains(pkm.getPokemonFamily()) //
+												&& pkm.getIvInPercentage() > 70)))) //
 				.reduce(Stream::concat) //
 				.map(stream -> stream.collect(Collectors.toList())) //
 				.toBlocking() //
 				.first();
+
+		// look for pkm to be transfered
+		List<Pokemon> transferPokemons = pokemons.stream()
+				// favorites cannot be transfered
+				.filter(pkm -> !pkm.isFavorite())
+				// don't tranfer pkms in gyms
+				.filter(pkm -> !pkm.isDeployed())
+				// don't transfer buddy
+				.filter(pkm -> !pkm.isBuddy())
+				// A tester
+				.filter(pkm -> !pkm.isEgg())
+				// don't transfer pkm with CP > 2000
+				.filter(pkm -> pkm.getCp() < 2000)
+				// don't transfer pkm tagged as kept
+				.filter(pkm -> !keptPokemons.contains(pkm)) //
+				.collect(Collectors.toList());
 
 		System.out.println("Releasing " + transferPokemons.size() + " pokemons...");
 		if (!transferPokemons.isEmpty()) {
@@ -510,6 +517,11 @@ public final class Utils {
 					Utils.onNewPokemon(api, r.getEvolvedPokemon());
 					pkm = r.getEvolvedPokemon();
 				}
+			}
+
+			if (evolutionMeta.canEvolve(pkm.getPokemonId())) {
+				// don't power up if still not fully evolved
+				continue;
 			}
 
 			while (pkm.canPowerUp() && pkm.getStardustCostsForPowerup() <= 4000) {

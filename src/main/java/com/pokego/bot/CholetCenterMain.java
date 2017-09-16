@@ -5,6 +5,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.pokego.bot.listener.TutorialListenerImpl;
 import com.pokego.bot.unitofwork.CatchPokemonAtArea;
+import com.pokego.bot.unitofwork.EvolveAndPowerUp;
 import com.pokego.bot.unitofwork.FreeInventory;
 import com.pokego.bot.unitofwork.Login;
 import com.pokego.bot.unitofwork.Loop;
@@ -58,7 +59,7 @@ public class CholetCenterMain {
 			}
 			
 			//api.addListener(new RequestListener()); 
-			api.addListener(new TutorialListenerImpl("BotPTC0002", StarterPokemon.BULBASAUR, TeamColor.YELLOW));
+			//api.addListener(new TutorialListenerImpl("BotPTC0002", StarterPokemon.BULBASAUR, TeamColor.YELLOW));
 			
 			queue.addWork(new Login(api, credentialProvider, queue, new Point(47.0603329, -0.8805762)));
 			
