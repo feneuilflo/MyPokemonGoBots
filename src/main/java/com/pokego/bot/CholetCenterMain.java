@@ -73,7 +73,7 @@ public class CholetCenterMain {
 			queue.addWork(new FreeInventory(api));
 			
 			/** ameliore les pkm */
-			queue.addWork(new EvolveAndPowerUp(api));
+			// queue.addWork(new EvolveAndPowerUp(api));
 
 			/** fait le tour des pokestops en boucle */
 			queue.addWork(new Loop(queue, Arrays.asList(new MoveToAllPokestops(api, queue))));

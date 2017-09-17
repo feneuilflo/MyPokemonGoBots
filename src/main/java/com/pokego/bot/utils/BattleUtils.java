@@ -106,6 +106,7 @@ public class BattleUtils {
 						handleAttack(api, battle);
 					}
 				} catch (RequestFailedException | InterruptedException e) {
+					// TODO stop battle thred
 					e.printStackTrace();
 					return false;
 				}
