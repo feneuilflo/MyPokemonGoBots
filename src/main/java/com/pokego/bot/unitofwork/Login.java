@@ -79,10 +79,11 @@ public class Login implements IUnitOfWork {
 		System.out.println("##### Liste des pokémons #####");
 		api.getInventories().getPokebank().getPokemons().stream()
 				.sorted(Comparator.comparing(Pokemon::getCp).reversed())
-				.forEach(pok -> System.out.println(String.format("%1$15s\tCP: %2$4d\tIV: %3$4s\tbonbons:%4$d", //
+				.forEach(pok -> System.out.println(String.format("%1$15s\tCP: %2$4d\tIV: %3$4s\tlevel: %4$2.1f\tbonbons:%5$d", //
 						PokeDictionary.getDisplayName((int) pok.getPokemonId().getNumber(), Locale.getDefault()), //
 						pok.getCp(), //
 						pok.getIvInPercentage(), //
+						pok.getLevel(), //
 						api.getInventories().getCandyjar().getCandies(pok.getPokemonFamily()))));
 		
 		// add listener

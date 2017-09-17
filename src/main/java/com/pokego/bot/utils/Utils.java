@@ -524,7 +524,7 @@ public final class Utils {
 				continue;
 			}
 
-			while (pkm.canPowerUp() && pkm.getStardustCostsForPowerup() <= 4000) {
+			while (pkm.canPowerUp() && pkm.getStardustCostsForPowerup() <= 8000) {
 				System.out.println("Upgrading "
 						+ PokeDictionary.getDisplayName(pkm.getPokemonId().getNumber(), Locale.getDefault()));
 				UpgradePokemonResponse.Result r = pkm.powerUp();
@@ -663,7 +663,7 @@ public final class Utils {
 					&& bag.getItem(ItemId.ITEM_HYPER_POTION).getCount() > 0) {
 				r = pkm.usePotion(ItemId.ITEM_HYPER_POTION);
 			} else if (api.getInventories().getItemBag().getItem(ItemId.ITEM_MAX_POTION).getCount() > 0) {
-				r = pkm.usePotion(ItemId.ITEM_POTION);
+				r = pkm.usePotion(ItemId.ITEM_MAX_POTION);
 			} else {
 				// cannot heal in one try -> use any potion
 				if (pkm.heal() == UseItemPotionResponse.Result.ERROR_CANNOT_USE) {
@@ -693,7 +693,8 @@ public final class Utils {
 		displayNearbyGyms(api);
 
 		return api.getMap().getMapObjects().getGyms().stream() //
-				.filter(gym -> !gym.getFortData().hasRaidInfo()) // cannot attack gym with running raid
+				.filter(gym -> !gym.getFortData().hasRaidInfo() //
+						|| !gym.getFortData().getRaidInfo().hasRaidPokemon()) // cannot attack gym with running raid
 				// look for gym with fly
 				.filter(gym -> {
 					try {

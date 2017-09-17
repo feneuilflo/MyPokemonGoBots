@@ -47,7 +47,7 @@ public class WorkQueue implements Runnable {
 				IUnitOfWork work = workList.remove(0);
 				Subscription subs = Subscriptions.empty();
 				try {
-					subs = Observable.timer(10, TimeUnit.MINUTES) //
+					subs = Observable.timer(30, TimeUnit.MINUTES) //
 						.subscribe(l -> {
 							System.err.println("Timeout on work " + work.getClass().getSimpleName());
 							asyncWorkingThread.interrupt();
