@@ -17,6 +17,7 @@ import POGOProtos.Data.Battle.BattleParticipantOuterClass.BattleParticipant;
 import POGOProtos.Enums.PokemonIdOuterClass.PokemonId;
 import POGOProtos.Enums.PokemonMoveOuterClass.PokemonMove;
 import POGOProtos.Enums.PokemonTypeOuterClass.PokemonType;
+import POGOProtos.Enums.TeamColorOuterClass.TeamColor;
 import POGOProtos.Networking.Responses.GymStartSessionResponseOuterClass.GymStartSessionResponse;
 import POGOProtos.Settings.Master.MoveSettingsOuterClass.MoveSettings;
 
@@ -32,10 +33,12 @@ public class BattleUtils {
 	public static boolean battleNearbyGym(PokemonGo api, Gym gym) throws RequestFailedException {
 		// check gym can be attacked
 		if ((gym.getFortData().hasRaidInfo() && gym.getFortData().getRaidInfo().hasRaidPokemon()) //
-				|| gym.getOwnedByTeam() == api.getPlayerProfile().getPlayerData().getTeam()) {
+				|| gym.getOwnedByTeam() == api.getPlayerProfile().getPlayerData().getTeam() //
+				|| gym.getOwnedByTeam() == TeamColor.NEUTRAL) {
 			System.out.println("Cannot attack the gym --> return");
 			return false;
 		}
+		TeamColor currentTeam = gym.getOwnedByTeam();
 
 		// select attackers
 		System.out.println("### selecting attackers: ");
@@ -69,8 +72,9 @@ public class BattleUtils {
 		}
 
 		// attack as long as there is a fly in the gym
-		while (gym.getDefendingPokemon().stream() //
-				.anyMatch(pkm -> Constants.KNOWN_FLIES.contains(pkm.getPokemon().getOwnerName()))) {
+//		while (gym.getDefendingPokemon().stream() //
+//				.anyMatch(pkm -> Constants.KNOWN_FLIES.contains(pkm.getPokemon().getOwnerName()))) {
+		while (gym.getOwnedByTeam() == currentTeam) {
 			System.out.println("### in range defenders: ###");
 			try {
 				System.out.println(String.format("%s - team: %s", gym.getName(), gym.getOwnedByTeam()));
