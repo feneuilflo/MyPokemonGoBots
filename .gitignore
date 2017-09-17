@@ -5,3 +5,7 @@
 /bin
 
 /src/main/java/com/pokego/bot/LoginData.java
+/target/
+/bot.jar
+/sources.txt
+/lib/PokeGOAPI-library-all-0.4.1.jar
