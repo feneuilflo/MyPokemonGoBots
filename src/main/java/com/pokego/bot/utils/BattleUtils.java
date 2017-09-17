@@ -2,7 +2,6 @@ package com.pokego.bot.utils;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.pokego.bot.Constants;
@@ -28,30 +27,14 @@ public class BattleUtils {
 	 * @throws RequestFailedException
 	 */
 
-	public static boolean battleNearbyGym(PokemonGo api) throws RequestFailedException {
-		System.out.println("### looking for gym to fight ###");
-
-		// find the closest gym
-		Optional<Gym> opt = api.getMap().getMapObjects().getGyms().stream() //
-				.filter(Gym::inRange) //
-				.sorted(Comparator.comparing(Gym::getDistance)) //
-				.findFirst();
-
-		if (!opt.isPresent()) {
-			System.out.println("No gym in range");
-			return false;
-		}
-
-		Gym gym = opt.get();
-		System.out.println("Found gym " + gym.getName());
-
+	public static boolean battleNearbyGym(PokemonGo api, Gym gym) throws RequestFailedException {
 		// check gym can be attacked
-		if (gym.getFortData().hasRaidInfo() //
+		if ((gym.getFortData().hasRaidInfo() && gym.getFortData().getRaidInfo().hasRaidPokemon()) //
 				|| gym.getOwnedByTeam() == api.getPlayerProfile().getPlayerData().getTeam()) {
-			System.out.println("Cannot attack the closest gym --> return");
+			System.out.println("Cannot attack the gym --> return");
 			return false;
 		}
-		
+
 		// select attackers
 		System.out.println("### selecting attackers: ");
 		List<Pokemon> pokemons = api.getInventories().getPokebank().getPokemons();
@@ -61,7 +44,6 @@ public class BattleUtils {
 				.limit(6) //
 				.peek(pkm -> System.out.println(String.format("%s (%d)", pkm.getPokemonId(), pkm.getCp()))) //
 				.collect(Collectors.toList());
-
 
 		// attack as long as there is a fly in the gym
 		while (gym.getDefendingPokemon().stream() //
@@ -80,7 +62,7 @@ public class BattleUtils {
 			}
 
 			// heal attackers
-			if(!healAll(api, attackers)) {
+			if (!healAll(api, attackers)) {
 				System.out.println("Cannot heal all attackers -> quit");
 				return false;
 			}
@@ -108,7 +90,7 @@ public class BattleUtils {
 				// check one defender defeated
 				if (!handler.isOneDefenderDefeated()) {
 					System.out.println("Crushing defeat -> quit");
-					
+
 					// heal attackers
 					healAll(api, attackers);
 					return false;
@@ -123,7 +105,7 @@ public class BattleUtils {
 
 			}
 		}
-		
+
 		// heal attackers
 		healAll(api, attackers);
 
@@ -131,10 +113,17 @@ public class BattleUtils {
 		return true;
 
 	}
-	
+
 	private static final boolean healAll(PokemonGo api, List<Pokemon> attackers) throws RequestFailedException {
 		// heal attackers
-		api.getInventories().updateInventories(true); // force to update pkm HP
+		System.out.println("### healing attackers ###");
+		
+		// force HP update (FIXME not needed anymore ?)
+//		api.getInventories().updateInventories(true);
+//		for(int idx = 0; idx < attackers.size(); idx++) {
+//			attackers.set(idx, api.getInventories().getPokebank().getPokemonById(attackers.get(idx).getId()));
+//		}
+		
 		for (Pokemon pkm : attackers) {
 			if (pkm.isFainted() || pkm.isInjured()) {
 				System.out.println("Healing " + pkm.getPokemonId());
@@ -145,18 +134,18 @@ public class BattleUtils {
 				}
 			}
 		}
-		
+
 		return true;
 	}
 
 	private static void handleAttack(PokemonGo api, Battle battle) throws InterruptedException {
-		if(battle.getActiveAttacker().getHealth() == 0 //
+		if (battle.getActiveAttacker().getHealth() == 0 //
 				|| battle.getActiveDefender().getHealth() == 0) {
 			// skip this one
 			Thread.sleep(100);
 			return;
 		}
-		
+
 		int duration;
 		PokemonMove specialMove = battle.getActiveAttacker().getPokemon().getMove2();
 		MoveSettings moveSettings = api.getItemTemplates().getMoveSettings(specialMove);
@@ -291,20 +280,41 @@ public class BattleUtils {
 		}
 
 		@Override
-		public void onAttackerSwap(PokemonGo api, Battle battle, Battle.BattlePokemon newAttacker) {
-			System.out.println("Attacker change: " + newAttacker.getPokemon().getPokemonId());
+		public void onAttackerSwap(PokemonGo api, Battle battle, Battle.BattlePokemon lastAttacker,
+				Battle.BattlePokemon newAttacker) {
+			// FIXME test attackers idx, update only if new idx > old idx
+			if (lastAttacker != null && lastAttacker.getPokemon().getId() != 0) {
+				Pokemon pkm = api.getInventories().getPokebank().getPokemonById(lastAttacker.getPokemon().getId());
+				if (pkm != null) {
+					pkm.setStamina(0);
+				}
+			}
+
+			System.out.println(String.format("Attacker change: %s -> %s", //
+					lastAttacker == null ? "null" : lastAttacker.getPokemon().getPokemonId(), //
+					newAttacker.getPokemon().getPokemonId()));
 		}
 
 		@Override
-		public void onDefenderSwap(PokemonGo api, Battle battle, Battle.BattlePokemon newDefender) {
+		public void onDefenderSwap(PokemonGo api, Battle battle, Battle.BattlePokemon lastDefender,
+				Battle.BattlePokemon newDefender) {
 			oneDefenderDefeated = true;
-			System.out.println("Defender change: " + newDefender.getPokemon().getPokemonId());
+			System.out.println(String.format("Defender change: %s -> %s", //
+					lastDefender == null ? "null" : lastDefender.getPokemon().getPokemonId(), //
+					newDefender.getPokemon().getPokemonId()));
 		}
 
 		@Override
 		public void onFaint(PokemonGo api, Battle battle, Battle.BattlePokemon pokemon, int duration,
 				Battle.ServerAction action) {
 			System.out.println(toIndexName(action) + " fainted!");
+			// TODO a travailler
+			Pokemon pkm = api.getInventories().getPokebank().getPokemonById(pokemon.getPokemon().getId());
+			if (pkm != null) {
+				pkm.setStamina(0);
+			} else {
+				System.out.println("pokemon not found");
+			}
 		}
 
 		@Override

@@ -41,13 +41,13 @@ public class Patrol implements IUnitOfWork {
 			
 			// ... and attack
 			queue.addWork(() -> {
-				if(!BattleUtils.battleNearbyGym(api)) {
+				if(!BattleUtils.battleNearbyGym(api, optGym.get())) {
 					// if we fail to win, do a farming session
 					queue.addImmediateWork(farmingUOW);
 				}
 				
-				// go back to previous location
-				queue.addWork(new MoveToLocation(api, pt));
+				// go back to saved location
+				queue.addImmediateWork(new MoveToLocation(api, pt));
 			});
 		} else {
 			// if no fly is found, do a farming session

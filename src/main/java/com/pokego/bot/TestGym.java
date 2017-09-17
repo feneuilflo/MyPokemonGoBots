@@ -308,12 +308,12 @@ public class TestGym {
 		}
 
 		@Override
-		public void onAttackerSwap(PokemonGo api, Battle battle, Battle.BattlePokemon newAttacker) {
+		public void onAttackerSwap(PokemonGo api, Battle battle, Battle.BattlePokemon lastAttacker, Battle.BattlePokemon newAttacker) {
 			System.out.println("Attacker change: " + newAttacker.getPokemon().getPokemonId());
 		}
 
 		@Override
-		public void onDefenderSwap(PokemonGo api, Battle battle, Battle.BattlePokemon newDefender) {
+		public void onDefenderSwap(PokemonGo api, Battle battle, Battle.BattlePokemon lastDefender, Battle.BattlePokemon newDefender) {
 			System.out.println("Defender change: " + newDefender.getPokemon().getPokemonId());
 		}
 
