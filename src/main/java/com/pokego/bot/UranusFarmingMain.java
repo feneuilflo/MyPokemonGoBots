@@ -39,7 +39,7 @@ public class UranusFarmingMain {
 		}
 
 		do {
-			final OkHttpClient httpClient = new OkHttpClient();
+			final OkHttpClient httpClient = Utils.provideHttpClient();
 			final PokemonGo api = new PokemonGo(httpClient);
 			final WorkQueue queue = new WorkQueue();
 			

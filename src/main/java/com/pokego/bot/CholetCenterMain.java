@@ -3,7 +3,6 @@ package com.pokego.bot;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-import com.pokego.bot.listener.TutorialListenerImpl;
 import com.pokego.bot.unitofwork.CatchPokemonAtArea;
 import com.pokego.bot.unitofwork.EvolveAndPowerUp;
 import com.pokego.bot.unitofwork.FreeInventory;
@@ -15,20 +14,18 @@ import com.pokego.bot.utils.Utils;
 import com.pokego.bot.utils.WorkQueue;
 import com.pokegoapi.api.PokemonGo;
 import com.pokegoapi.api.map.Point;
-import com.pokegoapi.api.pokemon.StarterPokemon;
 import com.pokegoapi.auth.CredentialProvider;
 import com.pokegoapi.auth.PtcCredentialProvider;
 import com.pokegoapi.exceptions.request.InvalidCredentialsException;
 import com.pokegoapi.exceptions.request.LoginFailedException;
 
-import POGOProtos.Enums.TeamColorOuterClass.TeamColor;
 import okhttp3.OkHttpClient;
 import rx.Observable;
 
 public class CholetCenterMain {
 
 	private static final boolean LOOP = true;
-	private static final long MAX_TIME_MIN = 240;
+	private static final long MAX_TIME_MIN = Integer.parseInt(System.getProperty("farm.time", "240"));
 
 	public static void main(String[] args) {
 		// exit after fixed time
@@ -41,7 +38,7 @@ public class CholetCenterMain {
 		}
 
 		do {
-			final OkHttpClient httpClient = new OkHttpClient();
+			final OkHttpClient httpClient = Utils.provideHttpClient();
 			final PokemonGo api = new PokemonGo(httpClient);
 			final WorkQueue queue = new WorkQueue();
 			
@@ -76,7 +73,7 @@ public class CholetCenterMain {
 			queue.addWork(new FreeInventory(api));
 			
 			/** ameliore les pkm */
-			// queue.addWork(new EvolveAndPowerUp(api));
+			queue.addWork(new EvolveAndPowerUp(api));
 
 			/** fait le tour des pokestops en boucle */
 			queue.addWork(new Loop(queue, Arrays.asList(new MoveToAllPokestops(api, queue))));

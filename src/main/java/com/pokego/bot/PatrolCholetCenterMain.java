@@ -2,19 +2,17 @@ package com.pokego.bot;
 
 import java.util.concurrent.TimeUnit;
 
-import com.pokego.bot.listener.TutorialListenerImpl;
 import com.pokego.bot.unitofwork.Login;
 import com.pokego.bot.unitofwork.Patrol;
+import com.pokego.bot.utils.Utils;
 import com.pokego.bot.utils.WorkQueue;
 import com.pokegoapi.api.PokemonGo;
 import com.pokegoapi.api.map.Point;
-import com.pokegoapi.api.pokemon.StarterPokemon;
 import com.pokegoapi.auth.CredentialProvider;
 import com.pokegoapi.auth.PtcCredentialProvider;
 import com.pokegoapi.exceptions.request.InvalidCredentialsException;
 import com.pokegoapi.exceptions.request.LoginFailedException;
 
-import POGOProtos.Enums.TeamColorOuterClass.TeamColor;
 import okhttp3.OkHttpClient;
 import rx.Observable;
 
@@ -26,7 +24,9 @@ public class PatrolCholetCenterMain {
 		int remainingTries = 10;
 
 		do {
-			final OkHttpClient httpClient = new OkHttpClient();
+			
+			OkHttpClient httpClient = Utils.provideHttpClient();
+
 			final PokemonGo api = new PokemonGo(httpClient);
 			final WorkQueue queue = new WorkQueue();
 			
@@ -44,9 +44,9 @@ public class PatrolCholetCenterMain {
 			}
 			
 			//api.addListener(new RequestListener()); 
-			api.addListener(new TutorialListenerImpl("BotPTC0002", StarterPokemon.BULBASAUR, TeamColor.YELLOW));
+			//api.addListener(new TutorialListenerImpl("BotPTC0002", StarterPokemon.BULBASAUR, TeamColor.YELLOW));
 			
-			queue.addWork(new Login(api, credentialProvider, queue, new Point(47.0603329, -0.8805762)));
+			queue.addWork(new Login(api, credentialProvider, queue, new Point(Constants.START_LATITUDE, Constants.START_LONGITUDE)));
 			
 			/** patrouille */
 			queue.addWork(new Patrol(api, queue, Constants.ORDERED_POKESTOP_NAMES));

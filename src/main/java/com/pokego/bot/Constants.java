@@ -9,8 +9,8 @@ import POGOProtos.Enums.PokemonIdOuterClass.PokemonId;
 public interface Constants {
 	
 	// Start location
-	public static final double START_LATITUDE = 47.0603329;
-	public static final double START_LONGITUDE = -0.8805762;
+	public static final double START_LATITUDE = Double.parseDouble(System.getProperty("start.lat", "47.0603329"));
+	public static final double START_LONGITUDE = Double.parseDouble(System.getProperty("start.long", "-0.8805762"));
 	public static final double START_ALTITUDE = 1.0; // not used by api
 	
 	// ordered list of pokestops in Cholet's center

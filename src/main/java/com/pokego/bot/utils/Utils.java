@@ -1,5 +1,9 @@
 package com.pokego.bot.utils;
 
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.SocketAddress;
+import java.net.Proxy.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -48,6 +52,7 @@ import POGOProtos.Networking.Responses.UpgradePokemonResponseOuterClass.UpgradeP
 import POGOProtos.Networking.Responses.UseItemEncounterResponseOuterClass.UseItemEncounterResponse;
 import POGOProtos.Networking.Responses.UseItemPotionResponseOuterClass.UseItemPotionResponse;
 import POGOProtos.Networking.Responses.UseItemReviveResponseOuterClass.UseItemReviveResponse;
+import okhttp3.OkHttpClient;
 import rx.Observable;
 
 public final class Utils {
@@ -492,6 +497,7 @@ public final class Utils {
 				.flatMap(obs -> obs.toList() //
 						.map(list -> list.stream() //
 								.sorted(Comparator.comparing(Pokemon::getIvInPercentage).reversed()) //
+								.filter(pkm -> pkm.getLevel() > 25) //
 								.limit(1) // powerup only one of each family
 								.filter(pkm -> !pkm.isEgg()) // A tester
 								.filter(pkm -> pkm.canPowerUp() || pkm.canEvolve()))) //
@@ -719,5 +725,37 @@ public final class Utils {
 				// look for weakest gym
 				.findFirst();
 	}
+	
+	/**
+	 * Trouve l'arène la plus proche
+	 * 
+	 * @return
+	 */
+	public static Optional<Gym> findClosestGym(PokemonGo api) {
+		displayNearbyGyms(api);
 
+		return api.getMap().getMapObjects().getGyms().stream() //
+				.filter(gym -> !gym.getFortData().hasRaidInfo() //
+						|| !gym.getFortData().getRaidInfo().hasRaidPokemon()) // cannot attack gym with running raid
+				// sort by distance
+				.sorted(Comparator.comparing(gym -> gym.getDistance()))
+				// look for weakest gym
+				.findFirst();
+	}
+
+	
+	public static OkHttpClient provideHttpClient() {
+		OkHttpClient httpClient = null;
+		String proxy_host = System.getProperty("proxy.host");
+		String proxy_port = System.getProperty("proxy.port");
+		if(proxy_host != null) {
+			SocketAddress socketAddress = new InetSocketAddress(proxy_host, Integer.parseInt(proxy_port));
+			Proxy proxy = new Proxy(Type.HTTP, socketAddress);
+			httpClient = new OkHttpClient.Builder().proxy(proxy).build();
+		} else {
+			httpClient = new OkHttpClient();
+		}
+		
+		return httpClient;
+	}
 }
