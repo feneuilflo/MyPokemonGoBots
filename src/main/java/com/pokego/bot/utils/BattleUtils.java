@@ -3,6 +3,7 @@ package com.pokego.bot.utils;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.pokego.bot.Constants;
 import com.pokegoapi.api.PokemonGo;
@@ -15,6 +16,7 @@ import com.pokegoapi.exceptions.request.RequestFailedException;
 import POGOProtos.Data.Battle.BattleParticipantOuterClass.BattleParticipant;
 import POGOProtos.Enums.PokemonIdOuterClass.PokemonId;
 import POGOProtos.Enums.PokemonMoveOuterClass.PokemonMove;
+import POGOProtos.Enums.PokemonTypeOuterClass.PokemonType;
 import POGOProtos.Networking.Responses.GymStartSessionResponseOuterClass.GymStartSessionResponse;
 import POGOProtos.Settings.Master.MoveSettingsOuterClass.MoveSettings;
 
@@ -38,12 +40,33 @@ public class BattleUtils {
 		// select attackers
 		System.out.println("### selecting attackers: ");
 		List<Pokemon> pokemons = api.getInventories().getPokebank().getPokemons();
-		List<Pokemon> attackers = pokemons.stream() //
-				.sorted(Comparator.comparing(Pokemon::getCp).reversed()) //
-				.filter(pkm -> !pkm.isDeployed()) //
-				.limit(6) //
-				.peek(pkm -> System.out.println(String.format("%s (%d)", pkm.getPokemonId(), pkm.getCp()))) //
-				.collect(Collectors.toList());
+		List<Pokemon> attackers = null;
+		if (gym.getDefendingPokemon().get(0).getPokemon().getPokemonId() == PokemonId.BLISSEY) {
+			System.out.println("Blissey algorithm...");
+			attackers = Stream.concat( //
+					pokemons.stream() //
+							.sorted(Comparator.comparing(Pokemon::getCp).reversed()) //
+							.filter(pkm -> pkm.getCp() > 2000) //
+							.filter(pkm -> !pkm.isDeployed()) //
+							.filter(pkm -> api.getItemTemplates().getMoveSettings(pkm.getMove1())
+									.getPokemonType() == PokemonType.POKEMON_TYPE_FIGHTING //
+									|| api.getItemTemplates().getMoveSettings(pkm.getMove2())
+											.getPokemonType() == PokemonType.POKEMON_TYPE_FIGHTING), //
+					pokemons.stream() //
+							.sorted(Comparator.comparing(Pokemon::getCp).reversed()) //
+							.filter(pkm -> !pkm.isDeployed()) //
+			) //
+					.limit(6) //
+					.peek(pkm -> System.out.println(String.format("%s (%d)", pkm.getPokemonId(), pkm.getCp()))) //
+					.collect(Collectors.toList());
+		} else {
+			attackers = pokemons.stream() //
+					.sorted(Comparator.comparing(Pokemon::getCp).reversed()) //
+					.filter(pkm -> !pkm.isDeployed()) //
+					.limit(6) //
+					.peek(pkm -> System.out.println(String.format("%s (%d)", pkm.getPokemonId(), pkm.getCp()))) //
+					.collect(Collectors.toList());
+		}
 
 		// attack as long as there is a fly in the gym
 		while (gym.getDefendingPokemon().stream() //
@@ -117,13 +140,14 @@ public class BattleUtils {
 	private static final boolean healAll(PokemonGo api, List<Pokemon> attackers) throws RequestFailedException {
 		// heal attackers
 		System.out.println("### healing attackers ###");
-		
+
 		// force HP update (FIXME not needed anymore ?)
-//		api.getInventories().updateInventories(true);
-//		for(int idx = 0; idx < attackers.size(); idx++) {
-//			attackers.set(idx, api.getInventories().getPokebank().getPokemonById(attackers.get(idx).getId()));
-//		}
-		
+		// api.getInventories().updateInventories(true);
+		// for(int idx = 0; idx < attackers.size(); idx++) {
+		// attackers.set(idx,
+		// api.getInventories().getPokebank().getPokemonById(attackers.get(idx).getId()));
+		// }
+
 		for (Pokemon pkm : attackers) {
 			if (pkm.isFainted() || pkm.isInjured()) {
 				System.out.println("Healing " + pkm.getPokemonId());
