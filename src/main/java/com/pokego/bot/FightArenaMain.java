@@ -4,6 +4,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.pokego.bot.unitofwork.Login;
+import com.pokego.bot.unitofwork.Stop;
 import com.pokego.bot.utils.BattleUtils;
 import com.pokego.bot.utils.Utils;
 import com.pokego.bot.utils.WorkQueue;
@@ -54,6 +55,8 @@ public class FightArenaMain {
 				System.out.println("No gym to fight !");
 			}
 		});
+		
+		queue.addWork(new Stop(queue));
 		
 		
 		try {
