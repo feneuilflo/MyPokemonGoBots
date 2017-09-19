@@ -7,22 +7,19 @@ import com.pokego.bot.Constants;
 import com.pokego.bot.LoginData;
 import com.pokego.bot.listener.PlayerListenerImpl;
 import com.pokego.bot.listener.PokemonListernerImpl;
+import com.pokego.bot.utils.Utils;
 import com.pokego.bot.utils.WorkQueue;
 import com.pokegoapi.api.PokemonGo;
 import com.pokegoapi.api.map.Point;
 import com.pokegoapi.api.player.PlayerProfile;
 import com.pokegoapi.api.pokemon.Pokemon;
 import com.pokegoapi.auth.CredentialProvider;
-import com.pokegoapi.auth.GoogleUserCredentialProvider;
-import com.pokegoapi.exceptions.request.InvalidCredentialsException;
 import com.pokegoapi.exceptions.request.LoginFailedException;
 import com.pokegoapi.exceptions.request.RequestFailedException;
 import com.pokegoapi.util.PokeDictionary;
 import com.pokegoapi.util.hash.HashProvider;
 import com.pokegoapi.util.hash.pokehash.PokeHashKey;
 import com.pokegoapi.util.hash.pokehash.PokeHashProvider;
-
-import okhttp3.OkHttpClient;
 
 public class Login implements IUnitOfWork {
 	
@@ -79,12 +76,14 @@ public class Login implements IUnitOfWork {
 		System.out.println("##### Liste des pokémons #####");
 		api.getInventories().getPokebank().getPokemons().stream()
 				.sorted(Comparator.comparing(Pokemon::getCp).reversed())
-				.forEach(pok -> System.out.println(String.format("%1$15s\tCP: %2$4d\tIV: %3$4s\tlevel: %4$2.1f\tbonbons:%5$d", //
+				.forEach(pok -> System.out.println(String.format("%1$15s\tCP: %2$4d\tIV: %3$4s\tlevel: %4$2.1f\tstats: %5$3d/%6$3d/%7$3d\tbonbons:%8$d\tdps:  %9$2.1f", //
 						PokeDictionary.getDisplayName((int) pok.getPokemonId().getNumber(), Locale.getDefault()), //
 						pok.getCp(), //
 						pok.getIvInPercentage(), //
 						pok.getLevel(), //
-						api.getInventories().getCandyjar().getCandies(pok.getPokemonFamily()))));
+						pok.getIndividualAttack(), pok.getIndividualDefense(), pok.getIndividualStamina(), //
+						api.getInventories().getCandyjar().getCandies(pok.getPokemonFamily()), //
+						Utils.getPkmOverallDpsAgainstBlissey(api, pok))));
 		
 		// add listener
 		api.addListener(new PokemonListernerImpl(queue));

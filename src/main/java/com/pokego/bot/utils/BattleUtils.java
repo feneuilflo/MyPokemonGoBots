@@ -46,19 +46,10 @@ public class BattleUtils {
 		List<Pokemon> attackers = null;
 		if (gym.getDefendingPokemon().get(0).getPokemon().getPokemonId() == PokemonId.BLISSEY) {
 			System.out.println("Blissey algorithm...");
-			attackers = Stream.concat( //
-					pokemons.stream() //
-							.sorted(Comparator.comparing(Pokemon::getCp).reversed()) //
-							.filter(pkm -> pkm.getCp() > 2000) //
-							.filter(pkm -> !pkm.isDeployed()) //
-							.filter(pkm -> api.getItemTemplates().getMoveSettings(pkm.getMove1())
-									.getPokemonType() == PokemonType.POKEMON_TYPE_FIGHTING //
-									|| api.getItemTemplates().getMoveSettings(pkm.getMove2())
-											.getPokemonType() == PokemonType.POKEMON_TYPE_FIGHTING), //
-					pokemons.stream() //
-							.sorted(Comparator.comparing(Pokemon::getCp).reversed()) //
-							.filter(pkm -> !pkm.isDeployed()) //
-			) //
+			attackers = pokemons.stream() //
+					.sorted(Comparator.<Pokemon, Double>comparing(pkm -> Utils.getPkmOverallDpsAgainstBlissey(api, pkm))
+							.reversed()) //
+					.filter(pkm -> !pkm.isDeployed()) //
 					.limit(6) //
 					.peek(pkm -> System.out.println(String.format("%s (%d)", pkm.getPokemonId(), pkm.getCp()))) //
 					.collect(Collectors.toList());
@@ -72,8 +63,9 @@ public class BattleUtils {
 		}
 
 		// attack as long as there is a fly in the gym
-//		while (gym.getDefendingPokemon().stream() //
-//				.anyMatch(pkm -> Constants.KNOWN_FLIES.contains(pkm.getPokemon().getOwnerName()))) {
+		// while (gym.getDefendingPokemon().stream() //
+		// .anyMatch(pkm ->
+		// Constants.KNOWN_FLIES.contains(pkm.getPokemon().getOwnerName()))) {
 		while (gym.getOwnedByTeam() == currentTeam) {
 			System.out.println("### in range defenders: ###");
 			try {
@@ -259,8 +251,10 @@ public class BattleUtils {
 
 		@Override
 		public void onPlayerJoin(PokemonGo api, Battle battle, BattleParticipant joined, Battle.ServerAction action) {
-			System.out.println(joined.getTrainerPublicProfile().getName() + " joined this battle with "
-					+ joined.getActivePokemon().getPokemonData().getPokemonId());
+			System.out.println(String.format("%s joined this battle with %s (idx = %d)", //
+					joined.getTrainerPublicProfile().getName(), //
+					joined.getActivePokemon().getPokemonData().getPokemonId(), //
+					action.getAttackerIndex()));
 		}
 
 		@Override

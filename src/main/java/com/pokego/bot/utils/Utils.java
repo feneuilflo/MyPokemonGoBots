@@ -2,8 +2,8 @@ package com.pokego.bot.utils;
 
 import java.net.InetSocketAddress;
 import java.net.Proxy;
-import java.net.SocketAddress;
 import java.net.Proxy.Type;
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -45,6 +45,7 @@ import com.pokegoapi.util.PokeDictionary;
 
 import POGOProtos.Enums.PokemonFamilyIdOuterClass.PokemonFamilyId;
 import POGOProtos.Enums.PokemonIdOuterClass.PokemonId;
+import POGOProtos.Enums.PokemonTypeOuterClass.PokemonType;
 import POGOProtos.Inventory.Item.ItemIdOuterClass.ItemId;
 import POGOProtos.Networking.Responses.CatchPokemonResponseOuterClass.CatchPokemonResponse.CatchStatus;
 import POGOProtos.Networking.Responses.NicknamePokemonResponseOuterClass.NicknamePokemonResponse;
@@ -52,6 +53,8 @@ import POGOProtos.Networking.Responses.UpgradePokemonResponseOuterClass.UpgradeP
 import POGOProtos.Networking.Responses.UseItemEncounterResponseOuterClass.UseItemEncounterResponse;
 import POGOProtos.Networking.Responses.UseItemPotionResponseOuterClass.UseItemPotionResponse;
 import POGOProtos.Networking.Responses.UseItemReviveResponseOuterClass.UseItemReviveResponse;
+import POGOProtos.Settings.Master.MoveSettingsOuterClass.MoveSettings;
+import POGOProtos.Settings.Master.PokemonSettingsOuterClass.PokemonSettings;
 import okhttp3.OkHttpClient;
 import rx.Observable;
 
@@ -758,4 +761,58 @@ public final class Utils {
 		
 		return httpClient;
 	}
+	
+	
+	public static int getPkmAttack(PokemonGo api, Pokemon pkm) {
+		return (int) ((pkm.getIndividualAttack() //
+				+ api.getItemTemplates().getPokemonSettings(pkm.getPokemonId()).getStats().getBaseAttack()) //
+				* api.getItemTemplates().getLevelCpMultiplier(pkm.getLevel()));
+	}
+	
+	public static int getPkmDefense(PokemonGo api, Pokemon pkm) {
+		return (int) ((pkm.getIndividualDefense() //
+				+ api.getItemTemplates().getPokemonSettings(pkm.getPokemonId()).getStats().getBaseDefense()) //
+				* api.getItemTemplates().getLevelCpMultiplier(pkm.getLevel()));
+	}
+	
+	public static int getPkmMove1DamageAgainstBlissey(PokemonGo api, Pokemon pkm) {
+		MoveSettings msettings = api.getItemTemplates().getMoveSettings(pkm.getMove1());
+		PokemonSettings psettings = api.getItemTemplates().getPokemonSettings(pkm.getPokemonId());
+		boolean stab = msettings.getPokemonType() == psettings.getType() //
+				|| msettings.getPokemonType() == psettings.getType2();
+		double stab_coef = stab ? api.getItemTemplates().getBattleSettings().getSameTypeAttackBonusMultiplier() : 1.0;
+		double efficiency = msettings.getPokemonType() == PokemonType.POKEMON_TYPE_FIGHTING ? 1.4 //
+				: (msettings.getPokemonType() == PokemonType.POKEMON_TYPE_GHOST ? 0.51 : 1.0); 
+		return (int) (Math.floor(1.2 * msettings.getPower() * getPkmAttack(api, pkm) / 200 * stab_coef * efficiency) + 1);	
+	}
+	
+	public static int getPkmMove2DamageAgainstBlissey(PokemonGo api, Pokemon pkm) {
+		MoveSettings msettings = api.getItemTemplates().getMoveSettings(pkm.getMove2());
+		PokemonSettings psettings = api.getItemTemplates().getPokemonSettings(pkm.getPokemonId());
+		boolean stab = msettings.getPokemonType() == psettings.getType() //
+				|| msettings.getPokemonType() == psettings.getType2();
+		double stab_coef = stab ? api.getItemTemplates().getBattleSettings().getSameTypeAttackBonusMultiplier() : 1.0;
+		double efficiency = msettings.getPokemonType() == PokemonType.POKEMON_TYPE_FIGHTING ? 1.4 //
+				: (msettings.getPokemonType() == PokemonType.POKEMON_TYPE_GHOST ? 0.51 : 1.0); 
+		return (int) (Math.floor(1.2 * msettings.getPower() * getPkmAttack(api, pkm) / 200 * stab_coef * efficiency) + 1);
+	}
+	
+	public static double getPkmOverallDpsAgainstBlissey(PokemonGo api, Pokemon pkm) {
+		MoveSettings msettings1 = api.getItemTemplates().getMoveSettings(pkm.getMove1());
+		MoveSettings msettings2 = api.getItemTemplates().getMoveSettings(pkm.getMove2());
+		
+		if(msettings1.getEnergyDelta() == 0) {
+			// Ditto transform
+			return 0.0;
+		}
+		
+		double energy_ratio = -1 * msettings2.getEnergyDelta() / msettings1.getEnergyDelta();
+		
+		double cycle_damage = getPkmMove1DamageAgainstBlissey(api, pkm) * energy_ratio + getPkmMove2DamageAgainstBlissey(api, pkm);
+		double cycle_duration_ms = msettings1.getDurationMs() * energy_ratio + msettings2.getDurationMs();
+		
+		return 1000 * cycle_damage / cycle_duration_ms;
+	}
+	
+	
 }
